@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<title>토스 송금 열기</title>
+<style>
+  :root { --bg: #f6f7f9; --fg: #191f28; --muted: #6b7684; --accent: #3182f6; --ink: #fff; --line: #e5e8eb; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #17171c; --fg: #f2f4f6; --muted: #9ea7b3; --accent: #4a90ff; --ink: #fff; --line: #2c2c35; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+  main { max-width: 420px; margin: 0 auto; padding: 32px 16px; display: grid; gap: 16px; }
+  h1 { font-size: 20px; margin: 0; }
+  .box { background: var(--surface, transparent); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 6px; }
+  .amt { font-size: 26px; font-weight: 700; }
+  .muted { color: var(--muted); font-size: 14px; }
+  a.go { display: flex; justify-content: center; align-items: center; min-height: 52px; border-radius: 10px; background: var(--accent); color: var(--ink); font-weight: 700; font-size: 17px; text-decoration: none; }
+  .err { color: #e5484d; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <h1>토스 송금 열기</h1>
+  <div id="out" class="box"><span class="muted">확인 중…</span></div>
+  <p class="muted">CS 보드의 [토스로 송금] 버튼이 여는 중간 페이지예요. 토스 송금 화면을 채워서 열기만 하고, 보내기·인증은 토스에서 직접 하세요. 이 페이지는 아무 데도 값을 보내거나 저장하지 않아요(값은 주소의 # 뒤에만 있고 서버로 가지 않아요).</p>
+</main>
+<script>
+// 주소 모양: #b=<은행명>&a=<계좌 숫자>&m=<금액 정수>&t=<받는 분 표시>
+(function () {
+  var out = document.getElementById("out");
+  var p = new URLSearchParams(location.hash.slice(1));
+  // 방문 기록에 계좌가 남지 않게 # 뒤를 지워요.
+  try { history.replaceState(null, "", location.pathname); } catch (e) {}
+  var bank = (p.get("b") || "").trim(), acct = (p.get("a") || "").replace(/[\s-]/g, ""), amt = p.get("m") || "", msg = (p.get("t") || "환불").slice(0, 20);
+  function show(html) { out.innerHTML = html; }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  if (!bank || !/^\d{8,16}$/.test(acct) || !/^[1-9]\d{0,7}$/.test(amt)) { show('<span class="err">링크 값이 이상해서 열지 않았어요.</span><span class="muted">보드에서 다시 눌러 주세요.</span>'); return; }
+  var q = "bank=" + encodeURIComponent(bank) + "&accountNo=" + acct + "&amount=" + amt + "&msg=" + encodeURIComponent(msg);
+  var href = /Android/i.test(navigator.userAgent) ? "intent://send?" + q + "#Intent;scheme=supertoss;package=viva.republica.toss;end" : "supertoss://send?" + q;
+  show('<span class="muted">' + esc(bank) + " · 계좌 끝 " + esc(acct.slice(-4)) + '</span><span class="amt">' + Number(amt).toLocaleString("ko-KR") + '원</span>'
+    + '<span class="muted">받는 분 표시: ' + esc(msg) + '</span><a class="go" id="go" href="' + esc(href) + '">토스 열기</a>');
+  // 바로 한 번 열어 보고, 안 열리면 [토스 열기]를 누르면 돼요.
+  setTimeout(function () { location.href = href; }, 300);
+})();
+</script>
+</body>
+</html>
