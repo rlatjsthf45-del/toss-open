@@ -36,12 +36,13 @@
   var bank = (p.get("b") || "").trim(), acct = (p.get("a") || "").replace(/[\s-]/g, ""), amt = p.get("m") || "", msg = (p.get("t") || "환불").slice(0, 20);
   function show(html) { out.innerHTML = html; }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
-  if (!bank || !/^\d{8,16}$/.test(acct) || !/^[1-9]\d{0,7}$/.test(amt)) { show('<span class="err">링크 값이 이상해서 열지 않았어요.</span><span class="muted">보드에서 다시 눌러 주세요.</span>'); return; }
-  var q = "bank=" + encodeURIComponent(bank) + "&accountNo=" + acct + "&amount=" + amt + "&msg=" + encodeURIComponent(msg);
+  // 은행명이 없으면 은행 칸을 비워 보내요. 토스가 은행을 고르라고 띄워요(11/24 사장님 시험 "좋아").
+  if (!/^\d{8,16}$/.test(acct) || !/^[1-9]\d{0,7}$/.test(amt)) { show('<span class="err">링크 값이 이상해서 열지 않았어요.</span><span class="muted">보드에서 다시 눌러 주세요.</span>'); return; }
+  var q = (bank ? "bank=" + encodeURIComponent(bank) + "&" : "") + "accountNo=" + acct + "&amount=" + amt + "&msg=" + encodeURIComponent(msg);
   var href = /Android/i.test(navigator.userAgent) ? "intent://send?" + q + "#Intent;scheme=supertoss;package=viva.republica.toss;end" : "supertoss://send?" + q;
   // 기다리지 않고 바로 열어요(11/24 사장님 "살짝 느리게 열리네"). 안 열리면 아래 [토스 열기]를 누르면 돼요.
   location.href = href;
-  show('<span class="muted">' + esc(bank) + " · 계좌 끝 " + esc(acct.slice(-4)) + '</span><span class="amt">' + Number(amt).toLocaleString("ko-KR") + '원</span>'
+  show('<span class="muted">' + esc(bank || "은행은 토스에서 고르기") + " · 계좌 끝 " + esc(acct.slice(-4)) + '</span><span class="amt">' + Number(amt).toLocaleString("ko-KR") + '원</span>'
     + '<span class="muted">받는 분 표시: ' + esc(msg) + '</span><a class="go" id="go" href="' + esc(href) + '">토스 열기</a>');
 })();
 </script>
